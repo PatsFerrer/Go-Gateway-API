@@ -43,3 +43,26 @@ func (s *AccountService) CreateAccount(input *dto.CreateAccountInput) (*dto.Acco
 	output := dto.FromAccount(account)
 	return output, nil
 }
+
+// função para atualizar o saldo da conta
+func (s *AccountService) UpdateBalance(apiKey string, amount float64) (*dto.AccountOutput, error) {
+	// verifica se a conta existe
+	account, err := s.repository.FindByAPIKey(apiKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// atualiza o saldo da conta
+	account.AddBalance(amount)
+
+	// salva o saldo atualizado
+	err = s.repository.UpdateBalance(account)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// converte o domínio em um dto
+	output := dto.FromAccount(account)
+	return output, nil
+}
