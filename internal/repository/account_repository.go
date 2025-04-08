@@ -104,3 +104,46 @@ func (r *AccountRepository) FindByID(id string) (*domain.Account, error) {
 	account.UpdatedAt = updatedAt
 	return &account, nil
 }
+
+// método para atualizar o saldo da conta
+// usamos locks para evitar problemas de concorrência
+func (r *AccountRepository) UpdateBalance(account *domain.Account) error {
+	// começa uma transação
+	// tx é um objeto que representa uma transação (transaction)
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	// garante que a transação será revertida caso algo dê errado
+	defer tx.Rollback()
+
+	var currentBalance float64
+	// FOR UPDATE é usado para garantir que a linha será bloqueada até que a transação seja confirmada
+	err = tx.QueryRow(`
+		SELECT balance 
+		FROM accounts 
+		WHERE id = $1
+		FOR UPDATE
+	`, account.ID).Scan(&currentBalance)
+
+	if err == sql.ErrNoRows {
+		return domain.ErrAccountNotFound
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// atualiza o saldo da conta
+	_, err = tx.Exec(`
+		UPDATE accounts 
+		SET balance = $1, updated_at = $2
+		WHERE id = $3
+	`, account.Balance, time.Now(), account.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
