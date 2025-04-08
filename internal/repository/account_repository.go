@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/patsferrer/go-gateway/internal/domain"
 )
@@ -44,4 +45,33 @@ func (r *AccountRepository) Save(account *domain.Account) error {
 	// se não houve erro, retorna nil
 	// o nil é um valor nulo em Go
 	return nil
+}
+
+// método para encontrar uma conta pela API Key
+func (r *AccountRepository) FindByAPIKey(apiKey string) (*domain.Account, error) {
+	var account domain.Account
+	var createdAt, updatedAt time.Time
+
+	err := r.db.QueryRow(`
+		SELECT id, name, email, api_key, balance, created_at, updated_at 
+		FROM accounts 
+		WHERE api_key = $1
+	`, apiKey).Scan( // Scan acessa a variavel 'account' e atribui o valor da coluna da query
+		&account.ID,
+		&account.Name,
+		&account.Email,
+		&account.APIKey,
+		&account.Balance,
+		&createdAt,
+		&updatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, domain.ErrAccountNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	account.CreatedAt = createdAt
+	account.UpdatedAt = updatedAt
+	return &account, nil
 }
