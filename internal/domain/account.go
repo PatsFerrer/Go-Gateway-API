@@ -3,6 +3,7 @@ package domain
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,6 +15,7 @@ type Account struct {
 	Email     string
 	APIKey    string
 	Balance   float64
+	mu        sync.RWMutex // mutex para evitar que o saldo seja atualizado simultaneamente, para não dar erro de calculo (concorrência)
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -37,4 +39,12 @@ func NewAccount(name, email string) *Account {
 		UpdatedAt: time.Now(),
 	}
 	return account
+}
+
+// método para adicionar saldo à conta, se chama de método porque é uma função que pertence a um tipo (Account)
+func (a *Account) AddBalance(amount float64) {
+	a.mu.Lock()         // bloqueia o acesso ao saldo
+	defer a.mu.Unlock() // libera o acesso ao saldo
+	a.Balance += amount
+	a.UpdatedAt = time.Now()
 }
