@@ -23,6 +23,7 @@ func NewAccountHandler(accountService *service.AccountService) *AccountHandler {
 
 // o go usa w e r para lidar com as requisições e respostas
 // função para criar uma conta
+// endpoint: POST /accounts
 func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// decodifica o corpo da requisição para o tipo CreateAccountInput
 	var input dto.CreateAccountInput
@@ -47,5 +48,27 @@ func (h *AccountHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	// retorna o status code 201 (Created) e a resposta
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(output)
+}
+
+// função para buscar uma conta pela APIKey
+// endpoint: GET /accounts
+func (h *AccountHandler) Get(w http.ResponseWriter, r *http.Request) {
+	apiKey := r.Header.Get("X-API-Key")
+
+	if apiKey == "" {
+		http.Error(w, "API Key is required", http.StatusUnauthorized)
+		return
+	}
+
+	output, err := h.accountService.FindByAPIKey(apiKey)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(output)
 }
