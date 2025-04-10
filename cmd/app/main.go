@@ -10,6 +10,7 @@ import (
 	"github.com/patsferrer/go-gateway/internal/repository"
 	"github.com/patsferrer/go-gateway/internal/service"
 	"github.com/patsferrer/go-gateway/internal/web/server"
+	_ "github.com/lib/pq" // o _ é pq nao usamos o pacote diretamente, mas o sql.Open da linha 41 vai usar
 )
 
 func getEnv(key, defaultValue string) string {
