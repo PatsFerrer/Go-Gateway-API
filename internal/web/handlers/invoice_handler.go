@@ -46,7 +46,7 @@ func (h *InvoiceHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // Endpoint: /invoice/{id}
 // Method: GET
-func (h *InvoiceHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+func (h *InvoiceHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		http.Error(w, "ID is required", http.StatusBadRequest)
