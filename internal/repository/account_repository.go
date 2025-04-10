@@ -77,7 +77,7 @@ func (r *AccountRepository) FindByAPIKey(apiKey string) (*domain.Account, error)
 }
 
 // método para encontrar uma conta pelo ID
-func (r *AccountRepository) FindByID(id string) (*domain.Account, error) {
+func (r *AccountRepository) FindById(id string) (*domain.Account, error) {
 	var account domain.Account
 	var createdAt, updatedAt time.Time
 
