@@ -7,12 +7,13 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq" // o _ é pq nao usamos o pacote diretamente, mas o sql.Open da linha 41 vai usar
 	"github.com/patsferrer/go-gateway/internal/repository"
 	"github.com/patsferrer/go-gateway/internal/service"
 	"github.com/patsferrer/go-gateway/internal/web/server"
-	_ "github.com/lib/pq" // o _ é pq nao usamos o pacote diretamente, mas o sql.Open da linha 41 vai usar
 )
 
+// getEnv retorna variável de ambiente ou valor padrão se não definida
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -20,14 +21,13 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// pacote que o Go lê as variáveis de ambiente
 func main() {
-	// carrega as variáveis de ambiente
+	// Carrega variáveis de ambiente do arquivo .env
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// pega as variáveis de ambiente
+	// Configura conexão com PostgreSQL usando variáveis de ambiente
 	connStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		getEnv("DB_HOST", "db"),
@@ -38,22 +38,26 @@ func main() {
 		getEnv("DB_SSL_MODE", "disable"),
 	)
 
+	// Inicializa conexão com o banco
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal("Error connection to data base", err)
+		log.Fatal("Error connecting to database: ", err)
 	}
-
 	defer db.Close()
 
+	// Inicializa camadas da aplicação (repository -> service -> server)
 	accountRepository := repository.NewAccountRepository(db)
 	accountService := service.NewAccountService(accountRepository)
 
+	invoiceRepository := repository.NewInvoiceRepository(db)
+	invoiceService := service.NewInvoiceService(invoiceRepository, *accountService)
+
+	// Configura e inicia o servidor HTTP
 	port := getEnv("HTTP_PORT", "8080")
-	srv := server.NewServer(accountService, port)
+	srv := server.NewServer(accountService, invoiceService, port)
 	srv.ConfigureRoutes()
 
-	// executo o servidor
 	if err := srv.Start(); err != nil {
-		log.Fatal("Error starting server", err)
+		log.Fatal("Error starting server: ", err)
 	}
 }
